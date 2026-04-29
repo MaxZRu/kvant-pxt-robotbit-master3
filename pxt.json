@@ -1,5 +1,5 @@
 {
-    "name": "kvant-robotbit",
+    "name": "robotbit",
     "version": "0.4.9",
     "description": "Kvant custom extension for Kittenbot Robotbit (stateful stepper blocks)",
     "license": "MIT",

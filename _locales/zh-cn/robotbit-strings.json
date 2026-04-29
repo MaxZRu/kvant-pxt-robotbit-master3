@@ -27,5 +27,6 @@
     "{id:group}Servo": "舵机",
     "{id:group}Motor": "电机/步进电机",
     "{id:group}Modules": "外接模块",
-    "{id:group}Kvant": "Kvant"
+    "{id:group}Kvant": "Kvant",
+    "robotbit.KvantVersion|block": "Kvant 扩展版本"
 }

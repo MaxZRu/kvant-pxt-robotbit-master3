@@ -518,6 +518,12 @@ namespace robotbit {
         }
     }
 
+    //% blockId=robotbit_kvant_version block="Kvant extension version"
+    //% group="Kvant" weight=68
+    export function KvantVersion(): string {
+        return "kvant-0.4.9"
+    }
+
     //% blockId=robotbit_motor_run block="Motor|%index|speed %speed"
     //% group="Motor" weight=59
     //% speed.min=-255 speed.max=255
