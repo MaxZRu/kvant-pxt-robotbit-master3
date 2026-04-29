@@ -37,9 +37,10 @@ namespace robotbit {
     const STP_CHD_H = 1023
     const STEPPER_PHASE_COUNT = 4
     const STEPPER_STEP_DELAY_MS = 5
-    // Logical phase order is normalized as [A+, B+, A-, B-] for both ports.
-    // M1 and M2 connectors are labeled differently, so channel mapping differs.
-    const STEPPER_CHANNELS_M1 = [3, 1, 2, 0]
+    // Logical order in code: [A+, B+, A-, B-] -> PCA9685 channel index.
+    // M1 silkscreen (V+, B-, B+, A-, A+): map verified so KvantStepperPhaseSet
+    // matches connector labels (was [3,1,2,0] and did not match silk).
+    const STEPPER_CHANNELS_M1 = [0, 2, 1, 3]
     const STEPPER_CHANNELS_M2 = [4, 6, 5, 7]
 
     // HT16K33 commands
