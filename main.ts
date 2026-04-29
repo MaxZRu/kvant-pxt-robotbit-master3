@@ -37,6 +37,10 @@ namespace robotbit {
     const STP_CHD_H = 1023
     const STEPPER_PHASE_COUNT = 4
     const STEPPER_STEP_DELAY_MS = 5
+    // Logical phase order is normalized as [A+, B+, A-, B-] for both ports.
+    // M1 and M2 connectors are labeled differently, so channel mapping differs.
+    const STEPPER_CHANNELS_M1 = [3, 1, 2, 0]
+    const STEPPER_CHANNELS_M2 = [4, 6, 5, 7]
 
     // HT16K33 commands
     const HT16K33_ADDRESS = 0x70
@@ -69,6 +73,24 @@ namespace robotbit {
     export enum Steppers {
         M1 = 0x1,
         M2 = 0x2
+    }
+
+    export enum KvantStepperPhase {
+        //% block="A+"
+        APlus = 0,
+        //% block="B+"
+        BPlus = 1,
+        //% block="A-"
+        AMinus = 2,
+        //% block="B-"
+        BMinus = 3
+    }
+
+    export enum KvantSwitch {
+        //% block="off"
+        Off = 0,
+        //% block="on"
+        On = 1
     }
 
     export enum SonarVersion {
@@ -190,7 +212,7 @@ namespace robotbit {
         ]
         const phaseId = (phase + STEPPER_PHASE_COUNT) % STEPPER_PHASE_COUNT
         const state = seq[phaseId]
-        const channels = index == Steppers.M1 ? [0, 2, 1, 3] : [4, 6, 5, 7]
+        const channels = getStepperChannels(index)
         for (let ch = 0; ch < 4; ch++) {
             if (state[ch]) {
                 setPwm(channels[ch], 0, 4095)
@@ -198,6 +220,10 @@ namespace robotbit {
                 setPwm(channels[ch], 0, 0)
             }
         }
+    }
+
+    function getStepperChannels(index: Steppers): number[] {
+        return index == Steppers.M1 ? STEPPER_CHANNELS_M1 : STEPPER_CHANNELS_M2
     }
 
     function stepOnce(index: Steppers, dir: boolean): void {
@@ -468,9 +494,16 @@ namespace robotbit {
         MotorStopAll()
     }
 
+    /**
+     * Stateful stepper: positive steps = one direction, negative = the opposite.
+     * In full-wave mode one electrical cycle is 4 micro-steps; multiples of 4
+     * return to the same 4-phase alignment, so +40 then -40 both end on the same
+     * detent — use e.g. 41/-41 or 1/-1 to see direction clearly.
+     */
     //% blockId=robotbit_kvant_stepper_steps block="Kvant Stepper 28BYJ-48|%index|steps %steps|delay(ms) %delayMs"
     //% group="Kvant" weight=67
     //% steps.defl=1
+    //% steps.min=-4096 steps.max=4096
     //% delayMs.defl=5
     //% delayMs.min=1 delayMs.max=100
     export function KvantStepperSteps(index: Steppers, steps: number, delayMs: number): void {
@@ -486,10 +519,17 @@ namespace robotbit {
         stepMany(index, steps, delayMs)
     }
 
+    /**
+     * Dual stepper over the same number of ticks: both finish after
+     * max(|steps1|,|steps2|) pauses. The motor with fewer steps only steps
+     * on some ticks (Bresenham spread); the other keeps pace.
+     */
     //% blockId=robotbit_kvant_stepper_steps_dual block="Kvant Dual Stepper(Steps)|M1 %steps1|M2 %steps2|delay(ms) %delayMs"
     //% group="Kvant" weight=66
     //% steps1.defl=1
     //% steps2.defl=1
+    //% steps1.min=-4096 steps1.max=4096
+    //% steps2.min=-4096 steps2.max=4096
     //% delayMs.defl=5
     //% delayMs.min=1 delayMs.max=100
     export function KvantStepperStepsDual(steps1: number, steps2: number, delayMs: number): void {
@@ -504,17 +544,64 @@ namespace robotbit {
         }
         const count1 = Math.abs(steps1)
         const count2 = Math.abs(steps2)
+        const total = Math.max(count1, count2)
+        if (total == 0) {
+            return
+        }
         const dir1 = steps1 > 0
         const dir2 = steps2 > 0
-        const total = Math.max(count1, count2)
+        let acc1 = 0
+        let acc2 = 0
         for (let i = 0; i < total; i++) {
-            if (i < count1) {
-                stepOnce(Steppers.M1, dir1)
+            if (count1 > 0) {
+                acc1 += count1
+                if (acc1 >= total) {
+                    acc1 -= total
+                    stepOnce(Steppers.M1, dir1)
+                }
             }
-            if (i < count2) {
-                stepOnce(Steppers.M2, dir2)
+            if (count2 > 0) {
+                acc2 += count2
+                if (acc2 >= total) {
+                    acc2 -= total
+                    stepOnce(Steppers.M2, dir2)
+                }
             }
             basic.pause(delayMs)
+        }
+    }
+
+    //% blockId=robotbit_kvant_setpwm block="Kvant setPwm|channel %channel|on %on|off %off"
+    //% group="Kvant" weight=65
+    //% channel.min=0 channel.max=15
+    //% on.min=0 on.max=4095
+    //% off.min=0 off.max=4095
+    export function KvantsetPwm(channel: number, on: number, off: number): void {
+        if (!initialized) {
+            initPCA9685()
+        }
+        if (channel < 0 || channel > 15) {
+            return
+        }
+        if (on < 0) on = 0
+        if (on > 4095) on = 4095
+        if (off < 0) off = 0
+        if (off > 4095) off = 4095
+        setPwm(channel, on, off)
+    }
+
+    //% blockId=robotbit_kvant_stepper_phase block="Kvant stepper phase|%index|%phase|%state"
+    //% group="Kvant" weight=64
+    export function KvantStepperPhaseSet(index: Steppers, phase: KvantStepperPhase, state: KvantSwitch): void {
+        if (!initialized) {
+            initPCA9685()
+        }
+        const channels = getStepperChannels(index)
+        const ch = channels[phase]
+        if (state == KvantSwitch.On) {
+            setPwm(ch, 0, 4095)
+        } else {
+            setPwm(ch, 0, 0)
         }
     }
 
