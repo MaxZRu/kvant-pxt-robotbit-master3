@@ -35,6 +35,8 @@ namespace robotbit {
 
     const STP_CHD_L = 3071
     const STP_CHD_H = 1023
+    const STEPPER_PHASE_COUNT = 4
+    const STEPPER_STEP_DELAY_MS = 5
 
     // HT16K33 commands
     const HT16K33_ADDRESS = 0x70
@@ -103,6 +105,8 @@ namespace robotbit {
     let neoStrip: neopixel.Strip;
     let matBuf = pins.createBuffer(17);
     let distanceBuf = 0;
+    let stepperPhaseM1 = 0
+    let stepperPhaseM2 = 0
 
     function i2cwrite(addr: number, reg: number, value: number) {
         let buf = pins.createBuffer(2)
@@ -164,6 +168,56 @@ namespace robotbit {
         pins.i2cWriteBuffer(PCA9685_ADDRESS, buf);
     }
 
+
+    function getStepperPhase(index: Steppers): number {
+        return index == Steppers.M1 ? stepperPhaseM1 : stepperPhaseM2
+    }
+
+    function setStepperPhase(index: Steppers, phase: number): void {
+        if (index == Steppers.M1) {
+            stepperPhaseM1 = phase
+        } else {
+            stepperPhaseM2 = phase
+        }
+    }
+
+    function applyStepperPhase(index: Steppers, phase: number): void {
+        const seq = [
+            [true, true, false, false],
+            [false, true, true, false],
+            [false, false, true, true],
+            [true, false, false, true]
+        ]
+        const phaseId = (phase + STEPPER_PHASE_COUNT) % STEPPER_PHASE_COUNT
+        const state = seq[phaseId]
+        const channels = index == Steppers.M1 ? [0, 2, 1, 3] : [4, 6, 5, 7]
+        for (let ch = 0; ch < 4; ch++) {
+            if (state[ch]) {
+                setPwm(channels[ch], 0, 4095)
+            } else {
+                setPwm(channels[ch], 0, 0)
+            }
+        }
+    }
+
+    function stepOnce(index: Steppers, dir: boolean): void {
+        let phase = getStepperPhase(index)
+        phase = (phase + (dir ? 1 : -1) + STEPPER_PHASE_COUNT) % STEPPER_PHASE_COUNT
+        setStepperPhase(index, phase)
+        applyStepperPhase(index, phase)
+    }
+
+    function stepMany(index: Steppers, steps: number, delayMs: number): void {
+        const count = Math.abs(steps)
+        if (count == 0) {
+            return
+        }
+        const dir = steps > 0
+        for (let i = 0; i < count; i++) {
+            stepOnce(index, dir)
+            basic.pause(delayMs)
+        }
+    }
 
     function setStepper(index: number, dir: boolean): void {
         if (index == 1) {
@@ -371,7 +425,6 @@ namespace robotbit {
             stopMotor(1); stopMotor(2);
             basic.pause(10240 * (degree2 - degree1) / 360);
         }
-
         MotorStopAll()
     }
 
@@ -413,6 +466,45 @@ namespace robotbit {
         delay = Math.abs(delay);
         basic.pause(delay);
         MotorStopAll()
+    }
+
+    //% blockId=robotbit_kvant_stepper_steps block="Stepper 28BYJ-48|%index|steps %steps|delay(ms) %delayMs"
+    //% group="Motor" weight=49
+    //% delayMs.min=1 delayMs.max=100
+    export function KvantStepperSteps(index: Steppers, steps: number, delayMs: number = STEPPER_STEP_DELAY_MS): void {
+        if (!initialized) {
+            initPCA9685()
+        }
+        if (delayMs < 1) {
+            delayMs = 1
+        }
+        stepMany(index, steps, delayMs)
+    }
+
+    //% blockId=robotbit_kvant_stepper_steps_dual block="Dual Stepper(Steps)|M1 %steps1|M2 %steps2|delay(ms) %delayMs"
+    //% group="Motor" weight=48
+    //% delayMs.min=1 delayMs.max=100
+    export function KvantStepperStepsDual(steps1: number, steps2: number, delayMs: number = STEPPER_STEP_DELAY_MS): void {
+        if (!initialized) {
+            initPCA9685()
+        }
+        if (delayMs < 1) {
+            delayMs = 1
+        }
+        const count1 = Math.abs(steps1)
+        const count2 = Math.abs(steps2)
+        const dir1 = steps1 > 0
+        const dir2 = steps2 > 0
+        const total = Math.max(count1, count2)
+        for (let i = 0; i < total; i++) {
+            if (i < count1) {
+                stepOnce(Steppers.M1, dir1)
+            }
+            if (i < count2) {
+                stepOnce(Steppers.M2, dir2)
+            }
+            basic.pause(delayMs)
+        }
     }
 
     //% blockId=robotbit_motor_run block="Motor|%index|speed %speed"

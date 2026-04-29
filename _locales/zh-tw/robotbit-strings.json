@@ -7,6 +7,8 @@
     "robotbit.StepperDegree|block": "步進 28BYJ-48|%index|角度 %degree",
     "robotbit.StepperTurn|block": "步進 28BYJ-48|%index|圈數 %turn",
     "robotbit.StepperDual|block": "雙步進(角度) |M1 %degree1| M2 %degree2",
+    "robotbit.KvantStepperSteps|block": "步進 28BYJ-48|%index|步數 %steps|延時(ms) %delayMs",
+    "robotbit.KvantStepperStepsDual|block": "雙步進(步數) |M1 %steps1| M2 %steps2|延時(ms) %delayMs",
     "robotbit.StpCarMove|block": "步進小車 前進 |距離(cm) %distance|輪直徑(mm) %diameter",
     "robotbit.StpCarTurn|block": "步進小車 轉向 |角度 %turn|輪直徑(mm) %diameter|輪距(mm) %track",
     "robotbit.MotorRun|block": "馬達|%index|速度 %speed",
