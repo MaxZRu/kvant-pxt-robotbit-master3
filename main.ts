@@ -468,12 +468,17 @@ namespace robotbit {
         MotorStopAll()
     }
 
-    //% blockId=robotbit_kvant_stepper_steps block="Stepper 28BYJ-48|%index|steps %steps|delay(ms) %delayMs"
+    //% blockId=robotbit_kvant_stepper_steps block="Kvant Stepper 28BYJ-48|%index|steps %steps|delay(ms) %delayMs"
     //% group="Motor" weight=49
+    //% steps.defl=1
+    //% delayMs.defl=5
     //% delayMs.min=1 delayMs.max=100
-    export function KvantStepperSteps(index: Steppers, steps: number, delayMs: number = STEPPER_STEP_DELAY_MS): void {
+    export function KvantStepperSteps(index: Steppers, steps: number, delayMs: number): void {
         if (!initialized) {
             initPCA9685()
+        }
+        if (!delayMs) {
+            delayMs = STEPPER_STEP_DELAY_MS
         }
         if (delayMs < 1) {
             delayMs = 1
@@ -481,12 +486,18 @@ namespace robotbit {
         stepMany(index, steps, delayMs)
     }
 
-    //% blockId=robotbit_kvant_stepper_steps_dual block="Dual Stepper(Steps)|M1 %steps1|M2 %steps2|delay(ms) %delayMs"
+    //% blockId=robotbit_kvant_stepper_steps_dual block="Kvant Dual Stepper(Steps)|M1 %steps1|M2 %steps2|delay(ms) %delayMs"
     //% group="Motor" weight=48
+    //% steps1.defl=1
+    //% steps2.defl=1
+    //% delayMs.defl=5
     //% delayMs.min=1 delayMs.max=100
-    export function KvantStepperStepsDual(steps1: number, steps2: number, delayMs: number = STEPPER_STEP_DELAY_MS): void {
+    export function KvantStepperStepsDual(steps1: number, steps2: number, delayMs: number): void {
         if (!initialized) {
             initPCA9685()
+        }
+        if (!delayMs) {
+            delayMs = STEPPER_STEP_DELAY_MS
         }
         if (delayMs < 1) {
             delayMs = 1
