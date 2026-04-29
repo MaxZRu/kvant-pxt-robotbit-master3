@@ -22,11 +22,10 @@
     "robotbit.MatrixDraw|block": "LED矩阵 描点|X %x|Y %y",
     "robotbit.MatrixClear|block": "清空 LED矩阵 ",
     "robotbit.MatrixRefresh|block": "刷新 LED矩阵 ",
-
     "robotbit.ValueUnit.Millimeter|block": "毫米",
     "robotbit.ValueUnit.Centimeters|block": "厘米",
-
     "{id:group}Servo": "舵机",
     "{id:group}Motor": "电机/步进电机",
-    "{id:group}Modules": "外接模块"
+    "{id:group}Modules": "外接模块",
+    "{id:group}Kvant": "Kvant"
 }

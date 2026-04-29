@@ -469,7 +469,7 @@ namespace robotbit {
     }
 
     //% blockId=robotbit_kvant_stepper_steps block="Kvant Stepper 28BYJ-48|%index|steps %steps|delay(ms) %delayMs"
-    //% group="Motor" weight=49
+    //% group="Kvant" weight=67
     //% steps.defl=1
     //% delayMs.defl=5
     //% delayMs.min=1 delayMs.max=100
@@ -487,7 +487,7 @@ namespace robotbit {
     }
 
     //% blockId=robotbit_kvant_stepper_steps_dual block="Kvant Dual Stepper(Steps)|M1 %steps1|M2 %steps2|delay(ms) %delayMs"
-    //% group="Motor" weight=48
+    //% group="Kvant" weight=66
     //% steps1.defl=1
     //% steps2.defl=1
     //% delayMs.defl=5
